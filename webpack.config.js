@@ -1,0 +1,24 @@
+const path = require('path')
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const CopyPlugin = require('copy-webpack-plugin')
+
+module.exports = {
+  entry: './src/index.js',
+  mode: 'development',
+  plugins: [
+    new CleanWebpackPlugin(),
+    new HtmlWebpackPlugin({
+      title: 'Pixi Playground'
+    }),
+    new CopyPlugin({
+        patterns: [
+            { from: 'src/assets', to: 'assets' },
+        ]
+    })
+  ],
+  output: {
+    filename: 'main.js',
+    path: path.resolve(__dirname, 'dist')
+  }
+}
