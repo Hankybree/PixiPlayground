@@ -1,11 +1,22 @@
 import * as PIXI from 'pixi.js';
 
-const socket = new WebSocket('ws://localhost:8000');
+const socket = new WebSocket('ws://116.203.125.0:8000');
+//const socket = new WebSocket('ws://localhost:8000');
 
 let intervalId = 0
-let player = {
-    x: 0,
-    y: 0
+let player = {}
+let bunny
+
+socket.onopen = (event) => {
+    console.log('Connected to server')
+}
+
+socket.onmessage = (event) => {
+
+    player = JSON.parse(event.data)
+
+    bunny.position.x = player.x
+    bunny.position.y = player.y
 }
 
 socket.onclose = (event) => {
@@ -47,24 +58,14 @@ document.body.appendChild(app.view)
 // load the texture we need
 app.loader.add('bunny', 'assets/bunny.png').load((loader, resources) => {
     // This creates a texture from a 'bunny.png' image
-    const bunny = new PIXI.Sprite(resources.bunny.texture)
+    bunny = new PIXI.Sprite(resources.bunny.texture)
 
-    socket.onopen = (event) => {
-        console.log('Connected to server')
-    
-    }
-    
-    socket.onmessage = (event) => {
-
-        player = JSON.parse(event.data)
-
-        bunny.position.x = player.x
-        bunny.position.y = player.y
-    }
+    bunny.position.x = player.x
+    bunny.position.y = player.y
 
     intervalId = setInterval(() => {
 
-        let player = {
+        player = {
             x: bunny.position.x,
             y: bunny.position.y
         }
@@ -74,17 +75,12 @@ app.loader.add('bunny', 'assets/bunny.png').load((loader, resources) => {
     }, 17)
 
     // Setup the position of the bunny
-    bunny.x = app.renderer.width / 2
-    bunny.y = app.renderer.height / 2
-
     // Rotate around the center
     bunny.anchor.x = 0.5
     bunny.anchor.y = 0.5
 
     // Add the bunny to the scene we are building
     app.stage.addChild(bunny)
-
-    console.log(bunny.position)
 
     // Listen for frame updates
     app.ticker.add(() => {
@@ -105,7 +101,6 @@ app.loader.add('bunny', 'assets/bunny.png').load((loader, resources) => {
         if (goDown) {
             bunny.position.y += 1
         }
-
         //bunny.rotation += 0.01
     })
 })

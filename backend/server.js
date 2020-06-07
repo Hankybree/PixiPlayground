@@ -10,8 +10,8 @@ server.listen(port, () => {
 })
 
 let player = {
-    x: 349,
-    y: 300
+    x: 640,
+    y: 349
 }
 
 const wss = new WebSocketServer({ server: server })
@@ -19,10 +19,11 @@ const wss = new WebSocketServer({ server: server })
 wss.on('connection', (socket, req) => {
     console.log(req.socket.remoteAddress + ' has connected')
 
+    console.log('on connect')
     socket.send(JSON.stringify(player))
 
     socket.onmessage = (event) => {
-
+        //console.log(event.data)
         player = JSON.parse(event.data)
 
         wss.clients.forEach((client) => {
