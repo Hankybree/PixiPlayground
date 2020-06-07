@@ -1,15 +1,22 @@
 import * as PIXI from 'pixi.js';
 
-// The application will create a renderer using WebGL, if possible,
-// with a fallback to a canvas render. It will also setup the ticker
-// and the root stage PIXI.Container
+const socket = new WebSocket('ws://localhost:8000');
+
+let intervalId = 0
+let player = {
+    x: 0,
+    y: 0
+}
+
+socket.onclose = (event) => {
+    console.log('Disconnected')
+    clearInterval(intervalId)
+}
+
 const app = new PIXI.Application({
     height: window.innerHeight,
     width: window.innerWidth
 })
-
-// The application will create a canvas element for you that you
-// can then insert into the DOM
 
 let goLeft = false
 let goRight = false
@@ -42,6 +49,30 @@ app.loader.add('bunny', 'assets/bunny.png').load((loader, resources) => {
     // This creates a texture from a 'bunny.png' image
     const bunny = new PIXI.Sprite(resources.bunny.texture)
 
+    socket.onopen = (event) => {
+        console.log('Connected to server')
+    
+    }
+    
+    socket.onmessage = (event) => {
+
+        player = JSON.parse(event.data)
+
+        bunny.position.x = player.x
+        bunny.position.y = player.y
+    }
+
+    intervalId = setInterval(() => {
+
+        let player = {
+            x: bunny.position.x,
+            y: bunny.position.y
+        }
+
+        socket.send(JSON.stringify(player))
+
+    }, 17)
+
     // Setup the position of the bunny
     bunny.x = app.renderer.width / 2
     bunny.y = app.renderer.height / 2
@@ -57,21 +88,21 @@ app.loader.add('bunny', 'assets/bunny.png').load((loader, resources) => {
 
     // Listen for frame updates
     app.ticker.add(() => {
-         // each frame we spin the bunny around a bit
-        
+        // each frame we spin the bunny around a bit
+
         // if (keyCode === 65) {
         //     bunny.position.x += -0.01
         // }
-        if(goLeft) {
+        if (goLeft) {
             bunny.position.x -= 1
         }
-        if(goRight) {
+        if (goRight) {
             bunny.position.x += 1
         }
-        if(goUp) {
+        if (goUp) {
             bunny.position.y -= 1
         }
-        if(goDown) {
+        if (goDown) {
             bunny.position.y += 1
         }
 
