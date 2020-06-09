@@ -10,24 +10,54 @@ server.listen(port, () => {
 })
 
 let player = {
-    x: 640,
+    x: 300,
     y: 349
 }
+let activeConnections = 0
+let clients = []
 
 const wss = new WebSocketServer({ server: server })
 
 wss.on('connection', (socket, req) => {
     console.log(req.socket.remoteAddress + ' has connected')
 
-    console.log('on connect')
-    socket.send(JSON.stringify(player))
+    let clientData = acceptConnection(socket)
+
+    socket.send(JSON.stringify(clientData))
 
     socket.onmessage = (event) => {
-        //console.log(event.data)
-        player = JSON.parse(event.data)
+        
+        clientData = JSON.parse(event.data)
+        
+        clients[clientData.id].position = clientData.position
 
-        wss.clients.forEach((client) => {
-            client.send(JSON.stringify(player))
-        })
+        for (let i = 0; i < clients.length; i++) {
+            if (clientData.id !== clients[i].id) {
+                socket.send(JSON.stringify(clients))
+            }
+        }
+    }
+
+    socket.onclose = (event) => {
+        console.log(req.socket.remoteAddress + ' has disconnected')
+        console.log(wss.clients.size)
+        socket.close()
     }
 })
+
+function acceptConnection(socket) {
+
+    let client = {
+        id: activeConnections,
+        position: {
+            x: 300,
+            y: 349
+        }
+    }
+
+    clients.push(client)
+
+    activeConnections++
+
+    return client
+}

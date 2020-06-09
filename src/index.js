@@ -1,11 +1,13 @@
 import * as PIXI from 'pixi.js';
 
-const socket = new WebSocket('ws://116.203.125.0:8000');
-//const socket = new WebSocket('ws://localhost:8000');
+//const socket = new WebSocket('ws://116.203.125.0:8000')
+const socket = new WebSocket('ws://localhost:8000')
 
 let intervalId = 0
-let player = {}
-let bunny
+let player = null
+let players = []
+let playerBunny
+let activeBunnies = []
 
 socket.onopen = (event) => {
     console.log('Connected to server')
@@ -13,10 +15,34 @@ socket.onopen = (event) => {
 
 socket.onmessage = (event) => {
 
-    player = JSON.parse(event.data)
+    if (player === null) {
+        Promise.all([setPlayer(), createPlayer()])
+            .then(() => {
+                intervalId = setInterval(() => {
+            
+                    playerBunny.position.x = player.position.x
+                    playerBunny.position.y = player.position.y
+                
+                    socket.send(JSON.stringify(player))
+                
+                }, 17)
+            })
+    } else {
 
-    bunny.position.x = player.x
-    bunny.position.y = player.y
+        players = JSON.parse(event.data)
+
+        for (let i = 0; i < players.length; i++) {
+            if (players[i].id !== player.id) {
+
+                if (players.length - 1 > activeBunnies.length) {
+                    createOpponent(players[i])
+                }
+
+                activeBunnies[0].position.x = players[i].position.x
+                activeBunnies[0].position.y = players[i].position.y
+            }
+        }
+    }
 }
 
 socket.onclose = (event) => {
@@ -55,52 +81,52 @@ addEventListener('keyup', (event) => {
 document.body.style.margin = 0
 document.body.appendChild(app.view)
 
-// load the texture we need
-app.loader.add('bunny', 'assets/bunny.png').load((loader, resources) => {
-    // This creates a texture from a 'bunny.png' image
-    bunny = new PIXI.Sprite(resources.bunny.texture)
+function createPlayer() {
 
-    bunny.position.x = player.x
-    bunny.position.y = player.y
+    app.loader.add('bunny', 'assets/bunny.png').load((loader, resources) => {
 
-    intervalId = setInterval(() => {
+        playerBunny = new PIXI.Sprite(resources.bunny.texture)
 
-        player = {
-            x: bunny.position.x,
-            y: bunny.position.y
-        }
+        playerBunny.anchor.x = 0.5
+        playerBunny.anchor.y = 0.5
 
-        socket.send(JSON.stringify(player))
+        app.stage.addChild(playerBunny)
 
-    }, 17)
-
-    // Setup the position of the bunny
-    // Rotate around the center
-    bunny.anchor.x = 0.5
-    bunny.anchor.y = 0.5
-
-    // Add the bunny to the scene we are building
-    app.stage.addChild(bunny)
-
-    // Listen for frame updates
-    app.ticker.add(() => {
-        // each frame we spin the bunny around a bit
-
-        // if (keyCode === 65) {
-        //     bunny.position.x += -0.01
-        // }
-        if (goLeft) {
-            bunny.position.x -= 1
-        }
-        if (goRight) {
-            bunny.position.x += 1
-        }
-        if (goUp) {
-            bunny.position.y -= 1
-        }
-        if (goDown) {
-            bunny.position.y += 1
-        }
-        //bunny.rotation += 0.01
+        app.ticker.add(() => {
+            if (goLeft) {
+                player.position.x -= 1
+            }
+            if (goRight) {
+                player.position.x += 1
+            }
+            if (goUp) {
+                player.position.y -= 1
+            }
+            if (goDown) {
+                player.position.y += 1
+            }
+        })
     })
-})
+}
+
+function createOpponent(player) {
+
+    app.loader.add('bunny' + player.id, 'assets/bunny.png').load((loader, resources) => {
+
+        let bunny = new PIXI.Sprite(resources.bunny.texture)
+
+        bunny.position.x = player.position.x
+        bunny.position.y = player.position.y
+
+        bunny.anchor.x = 0.5
+        bunny.anchor.y = 0.5
+
+        app.stage.addChild(bunny)
+
+        activeBunnies.push(bunny)
+    })
+}
+
+function setPlayer() {
+    player = JSON.parse(event.data)
+}
